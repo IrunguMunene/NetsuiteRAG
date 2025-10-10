@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSuiteRAG Observability Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid #334155;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #60a5fa;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.1em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            color: #60a5fa;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-name {
+            color: #cbd5e1;
+            font-size: 0.9em;
+        }
+
+        .metric-value {
+            color: #34d399;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-healthy {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-error {
+            background: #ef4444;
+            color: white;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: #64748b;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .timestamp {
+            color: #475569;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .error {
+            background: #7f1d1d;
+            color: #fecaca;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NetSuiteRAG Observability Dashboard</h1>
+            <p class="subtitle">Real-time monitoring and metrics</p>
+        </header>
+
+        <div id="dashboard">
+            <div class="loading">Loading metrics...</div>
+        </div>
+
+        <div class="refresh-info">
+            Auto-refresh every 5 seconds
+        </div>
+    </div>
+
+    <script>
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                if (!response.ok) throw new Error('Failed to fetch metrics');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+                return null;
+            }
+        }
+
+        async function fetchHealth() {
+            try {
+                const response = await fetch('/health');
+                return {
+                    status: response.ok ? 'Healthy' : 'Unhealthy',
+                    statusCode: response.status
+                };
+            } catch (error) {
+                return {
+                    status: 'Error',
+                    statusCode: 0
+                };
+            }
+        }
+
+        function renderDashboard(metrics, health) {
+            const dashboard = document.getElementById('dashboard');
+
+            if (!metrics) {
+                dashboard.innerHTML = '<div class="error">Failed to load metrics. Please check if the API is running.</div>';
+                return;
+            }
+
+            const healthBadgeClass = health.status === 'Healthy' ? 'status-healthy' : 'status-error';
+
+            let html = `
+                <div class="grid">
+                    <div class="card">
+                        <h2>System Health</h2>
+                        <div class="metric">
+                            <span class="metric-name">Status</span>
+                            <span class="status-badge ${healthBadgeClass}">${health.status}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-name">Last Updated</span>
+                            <span class="metric-value">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Request Counters</h2>
+            `;
+
+            const counters = Object.entries(metrics).filter(([key]) => key.startsWith('counter.'));
+            if (counters.length > 0) {
+                counters.forEach(([key, value]) => {
+                    const name = key.replace('counter.', '');
+                    html += `
+                        <div class="metric">
+                            <span class="metric-name">${name}</span>
+                            <span class="metric-value">${value.toLocaleString()}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<div class="metric"><span class="metric-name">No data yet</span></div>';
+            }
+
+            html += `</div>`;
+
+            // Group latency metrics by operation
+            const operations = new Set();
+            Object.keys(metrics).forEach(key => {
+                if (key.startsWith('latency.')) {
+                    const operation = key.split('.')[1];
+                    operations.add(operation);
+                }
+            });
+
+            operations.forEach(operation => {
+                html += `
+                    <div class="card">
+                        <h2>Latency: ${operation}</h2>
+                `;
+
+                const latencyMetrics = [
+                    { key: 'count', label: 'Requests' },
+                    { key: 'avg', label: 'Average', unit: 'ms' },
+                    { key: 'min', label: 'Min', unit: 'ms' },
+                    { key: 'max', label: 'Max', unit: 'ms' },
+                    { key: 'p50', label: 'P50', unit: 'ms' },
+                    { key: 'p95', label: 'P95', unit: 'ms' },
+                    { key: 'p99', label: 'P99', unit: 'ms' }
+                ];
+
+                latencyMetrics.forEach(({ key, label, unit }) => {
+                    const fullKey = `latency.${operation}.${key}`;
+                    if (metrics[fullKey] !== undefined) {
+                        const value = unit ? `${metrics[fullKey].toFixed(2)} ${unit}` : metrics[fullKey];
+                        html += `
+                            <div class="metric">
+                                <span class="metric-name">${label}</span>
+                                <span class="metric-value">${value}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                html += `</div>`;
+            });
+
+            html += `</div>`;
+
+            dashboard.innerHTML = html;
+        }
+
+        async function refresh() {
+            const [metrics, health] = await Promise.all([fetchMetrics(), fetchHealth()]);
+            renderDashboard(metrics, health);
+        }
+
+        // Initial load
+        refresh();
+
+        // Auto-refresh every 5 seconds
+        setInterval(refresh, 5000);
+    </script>
+</body>
+</html>
