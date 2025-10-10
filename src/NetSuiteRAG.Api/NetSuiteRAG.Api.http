@@ -1,0 +1,6 @@
+@NetSuiteRAG.Api_HostAddress = http://localhost:5109
+
+GET {{NetSuiteRAG.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
