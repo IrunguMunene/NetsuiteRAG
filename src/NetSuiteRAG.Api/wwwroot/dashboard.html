@@ -155,6 +155,7 @@
     <script>
         async function fetchMetrics() {
             try {
+                // Use relative URL - works with both HTTP and HTTPS
                 const response = await fetch('/api/metrics');
                 if (!response.ok) throw new Error('Failed to fetch metrics');
                 return await response.json();
@@ -166,6 +167,7 @@
 
         async function fetchHealth() {
             try {
+                // Use relative URL - works with both HTTP and HTTPS
                 const response = await fetch('/health');
                 return {
                     status: response.ok ? 'Healthy' : 'Unhealthy',
@@ -228,8 +230,13 @@
             const operations = new Set();
             Object.keys(metrics).forEach(key => {
                 if (key.startsWith('latency.')) {
-                    const operation = key.split('.')[1];
-                    operations.add(operation);
+                    // Extract operation name (everything between 'latency.' and the last '.')
+                    const parts = key.split('.');
+                    if (parts.length >= 3) {
+                        // Remove 'latency' prefix and metric suffix (count, avg, min, etc.)
+                        const operation = parts.slice(1, -1).join('.');
+                        operations.add(operation);
+                    }
                 }
             });
 

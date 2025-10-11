@@ -25,10 +25,10 @@ Building a NetSuite RAG reporting tool using Claude as the senior developer.
 ## Current Work
 
 ### Active Task
-**Task ID:** T1.03
-**Task Name:** Descriptor Enrichment
+**Task ID:** T1.04
+**Task Name:** Business glossary + exemplars (30-50)
 **Status:** Not Started
-**Session File:** sessions/session-006-T1.03-descriptor-enrichment.md
+**Session File:** sessions/session-007-T1.04-business-glossary.md
 
 ### Quick Start Command
 ```powershell
@@ -80,7 +80,7 @@ Located in: `docs/`
 ## Phase Checklist
 
 - [x] Phase 0: Foundations (Week 1-2) - Complete (3 of 3 complete)
-- [ ] Phase 1: RAG Corpus (Week 1-2)
+- [ ] Phase 1: RAG Corpus (Week 1-2) (3 of 5 complete)
 - [ ] Phase 2: Planning & Validation (Week 3-4)
 - [ ] Phase 4: Execution & Streaming (Week 5-6)
 - [ ] Phase 6: Angular UI (Week 7-8)
@@ -100,8 +100,8 @@ Located in: `docs/`
 ### Phase 1: RAG Corpus
 - [x] T1.01: Field dictionaries (standard)
 - [x] T1.02: Custom Field Crawler (daily)
-- [ ] T1.03: Descriptor Enrichment <- **CURRENT**
-- [ ] T1.04: Business glossary + exemplars (30-50)
+- [x] T1.03: Descriptor Enrichment
+- [ ] T1.04: Business glossary + exemplars (30-50) <- **CURRENT**
 - [ ] T1.05: Index artifacts to vector DB
 
 ### Phase 2: Planning & Validation
@@ -164,6 +164,7 @@ Located in: `docs/`
 - 2025-10-11 13:30 - T0.03: CI scaffolding - Complete
 - 2025-10-11 15:00 - T1.01: Field dictionaries (standard) - Complete
 - 2025-10-11 19:00 - T1.02: Custom Field Crawler (daily) - Complete
+- 2025-10-11 20:15 - T1.03: Descriptor Enrichment - Complete
 
 ---
 
@@ -179,10 +180,11 @@ None
 - T0.01: Project scaffolding in place with .NET solution structure
 - T0.02: Observability baseline configured with OpenTelemetry
 - T0.03: CI pipeline with GitHub Actions, parallel jobs, automated testing
-- **Phase 1 In Progress!** RAG Corpus implementation (2 of 5 complete)
+- **Phase 1 In Progress!** RAG Corpus implementation (3 of 5 complete)
 - T1.01: Field dictionary service with Redis caching, 6 REST endpoints, 14 standard fields
 - T1.02: Custom field crawler with daily schedule, stale detection (90+ days), 5 REST endpoints
-- Ready for T1.03: Descriptor Enrichment
+- T1.03: Field enrichment with Ollama embeddings, alias generation, business context, 4 REST endpoints
+- Ready for T1.04: Business glossary + exemplars (30-50)
 
 ---
 

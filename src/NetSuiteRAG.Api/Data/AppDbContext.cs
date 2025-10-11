@@ -142,6 +142,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // Create a B-tree index on label for search queries
             entity.HasIndex(e => e.Label)
                 .HasDatabaseName("ix_field_definitions_label");
+
+            entity.Property(e => e.BusinessContext)
+                .HasColumnName("business_context")
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.AmbiguityScore)
+                .HasColumnName("ambiguity_score")
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.EnrichedAt)
+                .HasColumnName("enriched_at");
+
+            entity.HasIndex(e => e.EnrichedAt)
+                .HasDatabaseName("ix_field_definitions_enriched_at");
         });
 
         // Configure CustomFieldDescriptor entity
@@ -225,6 +239,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(e => e.Label)
                 .HasDatabaseName("ix_custom_field_descriptors_label");
+
+            entity.Property(e => e.Aliases)
+                .HasColumnName("aliases")
+                .HasConversion(
+                    v => v == null ? null : string.Join(',', v),
+                    v => string.IsNullOrEmpty(v)
+                        ? null
+                        : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.BusinessContext)
+                .HasColumnName("business_context")
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.AmbiguityScore)
+                .HasColumnName("ambiguity_score")
+                .HasPrecision(5, 2);
+
+            entity.Property(e => e.EnrichedAt)
+                .HasColumnName("enriched_at");
+
+            entity.HasIndex(e => e.EnrichedAt)
+                .HasDatabaseName("ix_custom_field_descriptors_enriched_at");
         });
 
         // Configure CustomFieldChangeLog entity
