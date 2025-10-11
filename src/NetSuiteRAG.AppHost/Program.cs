@@ -16,6 +16,8 @@ var redis = builder.AddRedis("redis");
 var api = builder.AddProject<Projects.NetSuiteRAG_Api>("api")
     .WithReference(netsuitedb)
     .WithReference(redis)
+    .WaitFor(postgres)
+    .WaitFor(redis)
     .WithEnvironment("Qdrant__Endpoint", "http://localhost:6333");
 
 builder.Build().Run();
