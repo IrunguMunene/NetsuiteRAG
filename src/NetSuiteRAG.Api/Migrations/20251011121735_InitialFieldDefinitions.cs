@@ -44,11 +44,9 @@ namespace NetSuiteRAG.Api.Migrations
                 column: "is_custom_field");
 
             migrationBuilder.CreateIndex(
-                name: "ix_field_definitions_label_gin",
+                name: "ix_field_definitions_label",
                 table: "field_definitions",
-                column: "label")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+                column: "label");
 
             migrationBuilder.CreateIndex(
                 name: "ix_field_definitions_record_type",

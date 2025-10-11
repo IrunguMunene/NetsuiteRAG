@@ -129,11 +129,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(e => e.IsCustomField)
                 .HasDatabaseName("ix_field_definitions_is_custom_field");
 
-            // Create a GIN index for full-text search on label (PostgreSQL-specific)
+            // Create a B-tree index on label for search queries
             entity.HasIndex(e => e.Label)
-                .HasDatabaseName("ix_field_definitions_label_gin")
-                .HasMethod("gin")
-                .HasOperators("gin_trgm_ops");
+                .HasDatabaseName("ix_field_definitions_label");
         });
     }
 }

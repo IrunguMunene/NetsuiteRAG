@@ -119,10 +119,7 @@ namespace NetSuiteRAG.Api.Migrations
                         .HasDatabaseName("ix_field_definitions_is_custom_field");
 
                     b.HasIndex("Label")
-                        .HasDatabaseName("ix_field_definitions_label_gin");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Label"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Label"), new[] { "gin_trgm_ops" });
+                        .HasDatabaseName("ix_field_definitions_label");
 
                     b.HasIndex("RecordType")
                         .HasDatabaseName("ix_field_definitions_record_type");
