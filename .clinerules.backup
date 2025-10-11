@@ -1,0 +1,287 @@
+﻿# NetSuite RAG Project - Claude Code Rules
+
+## Project Context
+- **Project:** NetSuite RAG Reporting Tool
+- **Location:** D:\Development\NetsuiteRAG
+- **Tech Stack:** .NET 9, C# 13, Angular 20, PostgreSQL, Redis, Qdrant, Ollama
+- **Architecture:** RAG-based query planning with governance
+
+---
+
+## Always Read First
+When starting any session, read these files in order:
+1. PROJECT_MASTER.md - Current status and next task
+2. Latest session file in sessions/ folder
+3. CONVENTIONS.md - Coding standards
+4. ARCHITECTURE.md - System design
+5. Relevant docs from docs/ folder
+
+---
+
+## How to Determine Next Task
+
+When user says "continue" or "read .clinerules and continue":
+
+**Step 1:** Read PROJECT_MASTER.md
+
+**Step 2:** Find the task marked `<- **CURRENT**` in the Task Progress section
+
+**Step 3:** Check the Active Task section for:
+- Task ID
+- Task Name
+- Status
+- Session File
+
+**Step 4:** If session file exists, read it to see progress
+
+**Step 5:** Tell me:
+- "Current task: [Task ID] - [Task Name]"
+- "Status: [Not Started/In Progress/Continuing from Step X]"
+- "My plan: [Your step-by-step plan]"
+
+**Step 6:** Start working (ask permission for first step)
+
+---
+
+## Git Branching Workflow
+
+### Starting a Task
+
+**Before any work:**
+
+1. Check current branch: `git branch --show-current`
+
+2. If on main, create feature branch:
+   ```
+   git checkout -b feature/[TaskID]-[short-description]
+   ```
+   Example: `git checkout -b feature/T0.03-ci-scaffolding`
+
+3. Confirm branch created: Show me `git branch` output
+
+4. All work happens on this feature branch
+
+### During Work
+
+- Commit frequently with clear messages
+- Format: `[TaskID]: Description of what was done`
+- Example: `T0.03: Added GitHub Actions workflow`
+- Never commit to main branch directly
+
+### End of Session
+
+When user says "take a break":
+- Run: `.\scripts\end-session.ps1` with appropriate parameters
+- Commits to feature branch
+- Branch stays active for next session
+
+### When User Says "I'm Ready to Merge"
+
+This triggers the PR process:
+
+**Step 1: Run Code Review**
+```powershell
+.\scripts\review-code.ps1 -TaskId "[TaskID]"
+```
+
+**Step 2: Show Review Results**
+Report what passed/failed in detail
+
+**Step 3: If Issues Found**
+- Fix all issues
+- Commit fixes
+- Re-run review
+- Repeat until all checks pass
+
+**Step 4: If Review Passes**
+Ask: "Code review passed! Create Pull Request?"
+
+**Step 5: Create PR**
+```powershell
+.\scripts\create-pr.ps1 -TaskId "[TaskID]" -Description "Brief summary"
+```
+
+**Step 6: After PR Created**
+Tell user:
+- PR description file created
+- Instructions for merging
+- Wait for user to merge manually
+
+---
+
+## Core Development Rules
+
+### Code Quality
+- Use C# 13 features (primary constructors, collection expressions, required properties)
+- Follow result pattern (no exceptions for business logic)
+- All services use dependency injection
+- XML documentation on all public methods
+- Use FluentAssertions for tests
+- No commented-out code in commits
+- No Console.WriteLine (use ILogger)
+- No hardcoded connection strings or secrets
+
+### File Naming Conventions
+- Services: `I{Name}Service.cs` (interface), `{Name}Service.cs` (implementation)
+- Controllers: Plural nouns - `{Resource}Controller.cs`
+- Models: Singular nouns - `Query.cs`, `Template.cs`
+- Tests: `{ClassName}Tests.cs`
+- Test methods: `MethodName_Scenario_ExpectedResult`
+
+### Project Structure
+```
+src/
+├── NetSuiteRAG.Api/
+│   ├── Controllers/          # API endpoints
+│   ├── Services/
+│   │   ├── Interfaces/       # Service contracts
+│   │   └── Implementations/  # Service implementations
+│   ├── Models/               # DTOs
+│   ├── Data/                 # EF Core DbContext
+│   └── Validators/           # FluentValidation
+├── NetSuiteRAG.Shared/
+│   ├── Models/               # Domain models
+│   └── Interfaces/           # Shared contracts
+tests/
+└── NetSuiteRAG.Api.Tests/
+    ├── Services/             # Service tests
+    ├── Controllers/          # Controller tests
+    └── Integration/          # End-to-end tests
+```
+
+### API Conventions
+- Endpoints: `/api/{resource}` (lowercase, plural)
+- HTTP Methods: GET (retrieve), POST (create), PUT (update), DELETE (remove)
+- Status Codes:
+  - 200 OK - Success
+  - 201 Created - Resource created
+  - 400 Bad Request - Validation error
+  - 404 Not Found - Resource not found
+  - 409 Conflict - Disambiguation needed
+  - 500 Internal Server Error - Server error
+
+---
+
+## Verification Steps
+
+After EVERY step you complete:
+
+1. **Build Check:** Run `dotnet build` - must succeed
+2. **Test Check:** Run `dotnet test` if tests exist - must pass
+3. **Show Changes:** Tell me what files were created/modified
+4. **Ask Before Commit:** "Ready to commit this step?"
+
+---
+
+## When Taking a Break
+
+When user says "take a break" or "end session":
+
+**Execute this procedure (ask approval for each):**
+
+**Step 1:** Update current session file
+- Add "Session End Summary" section
+- List what was completed
+- List files created/modified
+- Note what is next
+
+**Step 2:** Update PROJECT_MASTER.md if task complete
+Run: `.\scripts\update-task.ps1 -TaskId "[TaskID]" -Status "[Complete/In Progress]"`
+
+**Step 3:** Commit to git
+Run: `.\scripts\end-session.ps1 -SessionFile "sessions/session-XXX.md" -Summary "Brief summary" -TaskId "[TaskID]" -TaskStatus "[Complete/In Progress]"`
+
+**Step 4:** Show summary
+- What was accomplished
+- What is next
+- How to resume
+
+---
+
+## PR Review Checklist
+
+Before creating PR, all these must pass:
+
+- [x] Code builds without errors
+- [x] All tests pass
+- [x] No commented-out code
+- [x] No unresolved TODOs
+- [x] No Console.WriteLine
+- [x] No hardcoded values
+- [x] Error handling present
+- [x] Logging appropriate
+- [x] XML docs on public methods
+- [x] Follows CONVENTIONS.md
+- [x] All changes committed
+- [x] On feature branch (not main)
+
+---
+
+## Available Scripts
+
+You can execute these scripts when needed:
+
+- `.\scripts\check-environment.ps1` - Verify all services running
+- `.\scripts\start-session.ps1` - Start session with environment check
+- `.\scripts\update-task.ps1` - Update task status in PROJECT_MASTER.md
+- `.\scripts\new-session.ps1` - Create new session file
+- `.\scripts\end-session.ps1` - End session procedure (update, commit, summarize)
+- `.\scripts\review-code.ps1` - Comprehensive code review before PR
+- `.\scripts\create-pr.ps1` - Create pull request with description
+
+---
+
+## Working Style
+
+### Your Approach
+1. **Break tasks into small steps** - Each step should be completable in 5-10 minutes
+2. **Explain before executing** - Tell me what you will do and why
+3. **Ask permission** - Always ask "May I proceed?" before executing
+4. **Verify success** - Check that each step worked before moving on
+5. **Show your work** - Display command outputs and results
+6. **Handle errors gracefully** - If something fails, diagnose and fix it
+
+### Communication
+- Be clear and concise
+- Use formatting (bold, code blocks) for readability
+- Number your steps
+- Tell me when moving to next major section
+- If uncertain, ask questions before proceeding
+
+---
+
+## Anti-Patterns to Avoid
+
+❌ Don't create placeholder code  
+❌ Don't skip error handling  
+❌ Don't forget XML documentation  
+❌ Don't commit broken code  
+❌ Don't create files without explaining first  
+❌ Don't work on main branch  
+❌ Don't skip code review  
+❌ Don't merge without user approval  
+
+---
+
+## Success Criteria
+
+Every feature/task must have:
+- ✅ Code that builds
+- ✅ Tests that pass
+- ✅ Documentation
+- ✅ Proper error handling
+- ✅ Committed to feature branch
+- ✅ Code review passed
+- ✅ PR created (when ready)
+
+---
+
+## Remember
+
+- I am the senior developer
+- You are the executor (but you approve each step)
+- We work incrementally
+- We verify everything
+- We document everything
+- We use git properly
+- Quality over speed

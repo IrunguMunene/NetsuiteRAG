@@ -25,6 +25,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CustomFieldChangeLog> CustomFieldChangeLogs => Set<CustomFieldChangeLog>();
 
     /// <summary>
+    /// Gets or sets the glossary terms table.
+    /// </summary>
+    public DbSet<GlossaryTerm> GlossaryTerms => Set<GlossaryTerm>();
+
+    /// <summary>
+    /// Gets or sets the query exemplars table.
+    /// </summary>
+    public DbSet<QueryExemplar> QueryExemplars => Set<QueryExemplar>();
+
+    /// <summary>
     /// Configures the database model using Fluent API.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
@@ -324,6 +334,163 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(e => e.CustomFieldDescriptorId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure GlossaryTerm entity
+        modelBuilder.Entity<GlossaryTerm>(entity =>
+        {
+            entity.ToTable("glossary_terms");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.Term)
+                .HasColumnName("term")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.Definition)
+                .HasColumnName("definition")
+                .HasMaxLength(2000)
+                .IsRequired();
+
+            entity.Property(e => e.Synonyms)
+                .HasColumnName("synonyms")
+                .HasConversion(
+                    v => v == null || v.Count == 0 ? null : string.Join('|', v),
+                    v => string.IsNullOrEmpty(v)
+                        ? new List<string>()
+                        : v.Split('|', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.Category)
+                .HasColumnName("category")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Examples)
+                .HasColumnName("examples")
+                .HasConversion(
+                    v => v == null || v.Count == 0 ? null : string.Join('|', v),
+                    v => string.IsNullOrEmpty(v)
+                        ? new List<string>()
+                        : v.Split('|', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .HasMaxLength(4000);
+
+            entity.Property(e => e.MetadataJson)
+                .HasColumnName("metadata_json")
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnName("updated_at")
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .HasColumnName("is_active")
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            // Create indexes
+            entity.HasIndex(e => e.Term)
+                .HasDatabaseName("ix_glossary_terms_term");
+
+            entity.HasIndex(e => e.Category)
+                .HasDatabaseName("ix_glossary_terms_category");
+
+            entity.HasIndex(e => e.IsActive)
+                .HasDatabaseName("ix_glossary_terms_is_active");
+        });
+
+        // Configure QueryExemplar entity
+        modelBuilder.Entity<QueryExemplar>(entity =>
+        {
+            entity.ToTable("query_exemplars");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.NaturalQuery)
+                .HasColumnName("natural_query")
+                .HasMaxLength(2000)
+                .IsRequired();
+
+            entity.Property(e => e.SavedSearchPlanJson)
+                .HasColumnName("saved_search_plan_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+
+            entity.Property(e => e.Explanation)
+                .HasColumnName("explanation")
+                .HasMaxLength(4000)
+                .IsRequired();
+
+            entity.Property(e => e.Tags)
+                .HasColumnName("tags")
+                .HasConversion(
+                    v => v == null || v.Count == 0 ? null : string.Join(',', v),
+                    v => string.IsNullOrEmpty(v)
+                        ? new List<string>()
+                        : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.Difficulty)
+                .HasColumnName("difficulty")
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(e => e.RecordType)
+                .HasColumnName("record_type")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.MetadataJson)
+                .HasColumnName("metadata_json")
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnName("updated_at")
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .HasColumnName("is_active")
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.RetrievalCount)
+                .HasColumnName("retrieval_count")
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            entity.Property(e => e.LastRetrievedAt)
+                .HasColumnName("last_retrieved_at");
+
+            // Create indexes
+            entity.HasIndex(e => e.RecordType)
+                .HasDatabaseName("ix_query_exemplars_record_type");
+
+            entity.HasIndex(e => e.Difficulty)
+                .HasDatabaseName("ix_query_exemplars_difficulty");
+
+            entity.HasIndex(e => e.IsActive)
+                .HasDatabaseName("ix_query_exemplars_is_active");
+
+            entity.HasIndex(e => e.RetrievalCount)
+                .HasDatabaseName("ix_query_exemplars_retrieval_count");
         });
     }
 }

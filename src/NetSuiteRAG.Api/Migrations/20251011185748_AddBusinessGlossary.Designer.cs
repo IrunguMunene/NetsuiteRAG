@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetSuiteRAG.Api.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NetSuiteRAG.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251011185748_AddBusinessGlossary")]
+    partial class AddBusinessGlossary
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -341,6 +344,14 @@ namespace NetSuiteRAG.Api.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("definition");
 
+                    b.Property<DateTime?>("EmbeddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("embedded_at");
+
+                    b.Property<string>("EmbeddingJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("embedding_json");
+
                     b.Property<string>("Examples")
                         .IsRequired()
                         .HasMaxLength(4000)
@@ -378,6 +389,9 @@ namespace NetSuiteRAG.Api.Migrations
                     b.HasIndex("Category")
                         .HasDatabaseName("ix_glossary_terms_category");
 
+                    b.HasIndex("EmbeddedAt")
+                        .HasDatabaseName("ix_glossary_terms_embedded_at");
+
                     b.HasIndex("IsActive")
                         .HasDatabaseName("ix_glossary_terms_is_active");
 
@@ -403,6 +417,14 @@ namespace NetSuiteRAG.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("difficulty");
+
+                    b.Property<DateTime?>("EmbeddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("embedded_at");
+
+                    b.Property<string>("EmbeddingJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("embedding_json");
 
                     b.Property<string>("Explanation")
                         .IsRequired()
@@ -461,6 +483,9 @@ namespace NetSuiteRAG.Api.Migrations
 
                     b.HasIndex("Difficulty")
                         .HasDatabaseName("ix_query_exemplars_difficulty");
+
+                    b.HasIndex("EmbeddedAt")
+                        .HasDatabaseName("ix_query_exemplars_embedded_at");
 
                     b.HasIndex("IsActive")
                         .HasDatabaseName("ix_query_exemplars_is_active");
