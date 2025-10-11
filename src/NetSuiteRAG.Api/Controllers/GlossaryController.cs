@@ -141,7 +141,7 @@ public class GlossaryController(
 
         return CreatedAtAction(
             nameof(GetTermById),
-            new { id = result.Value.Id },
+            new { id = result.Value!.Id },
             result.Value);
     }
 
@@ -177,7 +177,7 @@ public class GlossaryController(
         {
             logger.LogError("Failed to update glossary term: {Error}", result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error!.Contains("not found"))
                 return NotFound(result.Error);
 
             return BadRequest(result.Error);
@@ -208,7 +208,7 @@ public class GlossaryController(
         {
             logger.LogError("Failed to delete glossary term: {Error}", result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error!.Contains("not found"))
                 return NotFound(result.Error);
 
             return StatusCode(StatusCodes.Status500InternalServerError, result.Error);
@@ -346,7 +346,7 @@ public class GlossaryController(
 
         return CreatedAtAction(
             nameof(GetExemplarById),
-            new { id = result.Value.Id },
+            new { id = result.Value!.Id },
             result.Value);
     }
 
@@ -383,7 +383,7 @@ public class GlossaryController(
         {
             logger.LogError("Failed to update query exemplar: {Error}", result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error!.Contains("not found"))
                 return NotFound(result.Error);
 
             return BadRequest(result.Error);
@@ -414,7 +414,7 @@ public class GlossaryController(
         {
             logger.LogError("Failed to delete query exemplar: {Error}", result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error!.Contains("not found"))
                 return NotFound(result.Error);
 
             return StatusCode(StatusCodes.Status500InternalServerError, result.Error);
