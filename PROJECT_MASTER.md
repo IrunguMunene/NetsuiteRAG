@@ -48,6 +48,7 @@ Located in: `docs/`
 - [x] NetSuite_RAG_System_Architecture_v3.1.md
 - [x] NetSuite_RAG_Tasks_and_User_Stories_v3.1.md
 - [x] Tech_Stack_Best_Practices_No_DSPy_v2.md
+- [x] NL_to_SavedSearch_Plan_and_Catalog_2025-1.md
 
 ---
 

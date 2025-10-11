@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using NetSuiteRAG.Api.Data;
+using NetSuiteRAG.Api.Services.Implementations;
+using NetSuiteRAG.Api.Services.Interfaces;
 using NetSuiteRAG.Shared.Extensions;
 using NetSuiteRAG.Shared.Health;
 using NetSuiteRAG.Shared.Middleware;
@@ -20,11 +24,20 @@ try
         .Enrich.FromLogContext());
 
     // Add Aspire service integrations
-    builder.AddNpgsqlDataSource("netsuitedb");
+    builder.AddNpgsqlDbContext<AppDbContext>("netsuitedb");
     builder.AddRedisClient("redis");
+
+    // Add distributed caching using Redis
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = builder.Configuration.GetConnectionString("redis");
+    });
 
     // Add OpenTelemetry
     builder.Services.AddNetSuiteRagTelemetry(builder.Configuration);
+
+    // Register application services
+    builder.Services.AddScoped<IFieldDictionaryService, FieldDictionaryService>();
 
     // Add health checks
     builder.Services.AddHealthChecks()
@@ -34,9 +47,31 @@ try
     builder.Services.AddSingleton<MetricsCollector>();
 
     // Add services to the container
+    builder.Services.AddControllers();
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
+
+    // Apply database migrations and seed data
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            logger.LogInformation("Applying database migrations...");
+            await dbContext.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully");
+
+            await FieldDefinitionSeeder.SeedAsync(dbContext, logger);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error during database initialization");
+            throw;
+        }
+    }
 
     // Add QueryId middleware first to ensure all logs have correlation
     app.UseMiddleware<QueryIdMiddleware>();
@@ -67,6 +102,9 @@ try
 
     // Enable static files for dashboard
     app.UseStaticFiles();
+
+    // Map controllers
+    app.MapControllers();
 
     // Root endpoint for Aspire dashboard link
     app.MapGet("/", () => Results.Redirect("/dashboard.html"))
