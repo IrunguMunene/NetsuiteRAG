@@ -48,7 +48,28 @@ try
 
     // Add services to the container
     builder.Services.AddControllers();
-    builder.Services.AddOpenApi();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new()
+        {
+            Title = "NetSuite RAG API",
+            Version = "v1",
+            Description = "RAG-based NetSuite reporting API with natural language query planning",
+            Contact = new()
+            {
+                Name = "NetSuite RAG Team"
+            }
+        });
+
+        // Include XML comments for better documentation
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+        }
+    });
 
     var app = builder.Build();
 
@@ -91,7 +112,13 @@ try
     // Configure the HTTP request pipeline
     if (app.Environment.IsDevelopment())
     {
-        app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "NetSuite RAG API v1");
+            options.RoutePrefix = "swagger";
+            options.DocumentTitle = "NetSuite RAG API Documentation";
+        });
     }
 
     // Only use HTTPS redirection when not running under Aspire
