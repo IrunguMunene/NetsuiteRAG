@@ -102,6 +102,22 @@ try
 
             await FieldDefinitionSeeder.SeedAsync(dbContext, logger);
             await GlossarySeeder.SeedAsync(dbContext, logger);
+
+            // Initialize Qdrant vector store collections
+            logger.LogInformation("Initializing Qdrant vector store collections...");
+            var vectorStore = scope.ServiceProvider.GetRequiredService<IVectorStoreService>();
+            var initResult = await vectorStore.InitializeCollectionsAsync();
+
+            if (initResult.IsSuccess)
+            {
+                logger.LogInformation("Qdrant collections initialized successfully");
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Failed to initialize Qdrant collections: {Error}. Vector search will not be available until Qdrant is running.",
+                    initResult.Error);
+            }
         }
         catch (Exception ex)
         {
