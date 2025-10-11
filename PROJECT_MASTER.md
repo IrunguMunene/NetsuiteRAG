@@ -25,10 +25,10 @@ Building a NetSuite RAG reporting tool using Claude as the senior developer.
 ## Current Work
 
 ### Active Task
-**Task ID:** T1.02
-**Task Name:** Custom Field Crawler (daily)
+**Task ID:** T1.03
+**Task Name:** Descriptor Enrichment
 **Status:** Not Started
-**Session File:** sessions/session-005-T1.02-custom-field-crawler.md
+**Session File:** sessions/session-006-T1.03-descriptor-enrichment.md
 
 ### Quick Start Command
 ```powershell
@@ -99,8 +99,8 @@ Located in: `docs/`
 
 ### Phase 1: RAG Corpus
 - [x] T1.01: Field dictionaries (standard)
-- [ ] T1.02: Custom Field Crawler (daily) <- **CURRENT**
-- [ ] T1.03: Descriptor Enrichment
+- [x] T1.02: Custom Field Crawler (daily)
+- [ ] T1.03: Descriptor Enrichment <- **CURRENT**
 - [ ] T1.04: Business glossary + exemplars (30-50)
 - [ ] T1.05: Index artifacts to vector DB
 
@@ -163,6 +163,7 @@ Located in: `docs/`
 - 2025-10-10 14:00 - T0.02: Observability baseline - Complete
 - 2025-10-11 13:30 - T0.03: CI scaffolding - Complete
 - 2025-10-11 15:00 - T1.01: Field dictionaries (standard) - Complete
+- 2025-10-11 19:00 - T1.02: Custom Field Crawler (daily) - Complete
 
 ---
 
@@ -178,9 +179,10 @@ None
 - T0.01: Project scaffolding in place with .NET solution structure
 - T0.02: Observability baseline configured with OpenTelemetry
 - T0.03: CI pipeline with GitHub Actions, parallel jobs, automated testing
-- **Phase 1 Started!** RAG Corpus implementation in progress
+- **Phase 1 In Progress!** RAG Corpus implementation (2 of 5 complete)
 - T1.01: Field dictionary service with Redis caching, 6 REST endpoints, 14 standard fields
-- Ready for T1.02: Custom Field Crawler
+- T1.02: Custom field crawler with daily schedule, stale detection (90+ days), 5 REST endpoints
+- Ready for T1.03: Descriptor Enrichment
 
 ---
 

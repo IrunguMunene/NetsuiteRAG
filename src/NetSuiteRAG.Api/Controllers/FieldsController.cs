@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NetSuiteRAG.Api.Services.Interfaces;
 using NetSuiteRAG.Shared.Models;
+using NetSuiteRAG.Shared.Monitoring;
 
 namespace NetSuiteRAG.Api.Controllers;
 
@@ -12,6 +13,7 @@ namespace NetSuiteRAG.Api.Controllers;
 [Route("api/[controller]")]
 public class FieldsController(
     IFieldDictionaryService fieldService,
+    MetricsCollector metrics,
     ILogger<FieldsController> logger) : ControllerBase
 {
     /// <summary>
@@ -29,6 +31,9 @@ public class FieldsController(
         string recordType,
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("fields.get-for-type.requests");
+
         try
         {
             if (string.IsNullOrWhiteSpace(recordType))
@@ -44,10 +49,14 @@ public class FieldsController(
                 recordType,
                 cancellationToken);
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("fields.get-for-type", elapsedMs);
+
             return Ok(fields);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("fields.get-for-type.errors");
             logger.LogError(
                 ex,
                 "Error retrieving fields for record type {RecordType}",
@@ -76,6 +85,9 @@ public class FieldsController(
         string fieldId,
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("fields.get-field.requests");
+
         try
         {
             if (string.IsNullOrWhiteSpace(recordType) || string.IsNullOrWhiteSpace(fieldId))
@@ -101,10 +113,14 @@ public class FieldsController(
                 });
             }
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("fields.get-field", elapsedMs);
+
             return Ok(field);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("fields.get-field.errors");
             logger.LogError(
                 ex,
                 "Error retrieving field {FieldId} for record type {RecordType}",
@@ -136,6 +152,9 @@ public class FieldsController(
         [FromQuery] int maxResults = 10,
         CancellationToken cancellationToken = default)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("fields.search.requests");
+
         try
         {
             if (string.IsNullOrWhiteSpace(recordType))
@@ -165,10 +184,14 @@ public class FieldsController(
                 maxResults,
                 cancellationToken);
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("fields.search", elapsedMs);
+
             return Ok(fields);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("fields.search.errors");
             logger.LogError(
                 ex,
                 "Error searching fields in {RecordType} for query '{Query}'",
@@ -198,6 +221,9 @@ public class FieldsController(
         string joinName,
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("fields.get-for-join.requests");
+
         try
         {
             if (string.IsNullOrWhiteSpace(recordType) || string.IsNullOrWhiteSpace(joinName))
@@ -215,10 +241,14 @@ public class FieldsController(
                 joinName,
                 cancellationToken);
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("fields.get-for-join", elapsedMs);
+
             return Ok(fields);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("fields.get-for-join.errors");
             logger.LogError(
                 ex,
                 "Error retrieving fields for join {JoinName} in {RecordType}",
@@ -250,6 +280,9 @@ public class FieldsController(
         string operatorType,
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("fields.validate-operator.requests");
+
         try
         {
             if (string.IsNullOrWhiteSpace(recordType) ||
@@ -282,6 +315,9 @@ public class FieldsController(
                 op,
                 cancellationToken);
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("fields.validate-operator", elapsedMs);
+
             return Ok(new
             {
                 isValid,
@@ -290,6 +326,7 @@ public class FieldsController(
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("fields.validate-operator.errors");
             logger.LogError(
                 ex,
                 "Error validating operator {OperatorType} for field {FieldId} in {RecordType}",
@@ -319,6 +356,9 @@ public class FieldsController(
         string recordType,
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("fields.invalidate-cache.requests");
+
         try
         {
             if (string.IsNullOrWhiteSpace(recordType))
@@ -332,6 +372,9 @@ public class FieldsController(
 
             await fieldService.InvalidateCacheAsync(recordType, cancellationToken);
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("fields.invalidate-cache", elapsedMs);
+
             return Ok(new
             {
                 message = $"Cache invalidated for record type '{recordType}'"
@@ -339,6 +382,7 @@ public class FieldsController(
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("fields.invalidate-cache.errors");
             logger.LogError(
                 ex,
                 "Error invalidating cache for record type {RecordType}",
