@@ -15,6 +15,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FieldDefinition> FieldDefinitions => Set<FieldDefinition>();
 
     /// <summary>
+    /// Gets or sets the custom field descriptors table.
+    /// </summary>
+    public DbSet<CustomFieldDescriptor> CustomFieldDescriptors => Set<CustomFieldDescriptor>();
+
+    /// <summary>
+    /// Gets or sets the custom field change log table.
+    /// </summary>
+    public DbSet<CustomFieldChangeLog> CustomFieldChangeLogs => Set<CustomFieldChangeLog>();
+
+    /// <summary>
     /// Configures the database model using Fluent API.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
@@ -132,6 +142,151 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // Create a B-tree index on label for search queries
             entity.HasIndex(e => e.Label)
                 .HasDatabaseName("ix_field_definitions_label");
+        });
+
+        // Configure CustomFieldDescriptor entity
+        modelBuilder.Entity<CustomFieldDescriptor>(entity =>
+        {
+            entity.ToTable("custom_field_descriptors");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.FieldId)
+                .HasColumnName("field_id")
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.RecordType)
+                .HasColumnName("record_type")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Label)
+                .HasColumnName("label")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.Type)
+                .HasColumnName("type")
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.Description)
+                .HasColumnName("description")
+                .HasMaxLength(2000);
+
+            entity.Property(e => e.IsMandatory)
+                .HasColumnName("is_mandatory")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.DefaultValue)
+                .HasColumnName("default_value")
+                .HasMaxLength(500);
+
+            entity.Property(e => e.IsStale)
+                .HasColumnName("is_stale")
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnName("updated_at")
+                .IsRequired();
+
+            entity.Property(e => e.LastSeenAt)
+                .HasColumnName("last_seen_at")
+                .IsRequired();
+
+            entity.Property(e => e.MetadataJson)
+                .HasColumnName("metadata_json")
+                .HasColumnType("jsonb");
+
+            // Create indexes
+            entity.HasIndex(e => new { e.RecordType, e.FieldId })
+                .HasDatabaseName("ix_custom_field_descriptors_record_type_field_id")
+                .IsUnique();
+
+            entity.HasIndex(e => e.RecordType)
+                .HasDatabaseName("ix_custom_field_descriptors_record_type");
+
+            entity.HasIndex(e => e.IsStale)
+                .HasDatabaseName("ix_custom_field_descriptors_is_stale");
+
+            entity.HasIndex(e => e.LastSeenAt)
+                .HasDatabaseName("ix_custom_field_descriptors_last_seen_at");
+
+            entity.HasIndex(e => e.Label)
+                .HasDatabaseName("ix_custom_field_descriptors_label");
+        });
+
+        // Configure CustomFieldChangeLog entity
+        modelBuilder.Entity<CustomFieldChangeLog>(entity =>
+        {
+            entity.ToTable("custom_field_change_logs");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.CustomFieldDescriptorId)
+                .HasColumnName("custom_field_descriptor_id")
+                .IsRequired();
+
+            entity.Property(e => e.FieldId)
+                .HasColumnName("field_id")
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.ChangeType)
+                .HasColumnName("change_type")
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.OldValue)
+                .HasColumnName("old_value")
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.NewValue)
+                .HasColumnName("new_value")
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.DetectedAt)
+                .HasColumnName("detected_at")
+                .IsRequired();
+
+            entity.Property(e => e.ChangeDescription)
+                .HasColumnName("change_description")
+                .HasMaxLength(1000);
+
+            // Create indexes
+            entity.HasIndex(e => e.CustomFieldDescriptorId)
+                .HasDatabaseName("ix_custom_field_change_logs_descriptor_id");
+
+            entity.HasIndex(e => e.FieldId)
+                .HasDatabaseName("ix_custom_field_change_logs_field_id");
+
+            entity.HasIndex(e => e.DetectedAt)
+                .HasDatabaseName("ix_custom_field_change_logs_detected_at");
+
+            entity.HasIndex(e => e.ChangeType)
+                .HasDatabaseName("ix_custom_field_change_logs_change_type");
+
+            // Configure relationship
+            entity.HasOne(e => e.CustomFieldDescriptor)
+                .WithMany()
+                .HasForeignKey(e => e.CustomFieldDescriptorId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

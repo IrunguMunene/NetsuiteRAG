@@ -38,6 +38,14 @@ try
 
     // Register application services
     builder.Services.AddScoped<IFieldDictionaryService, FieldDictionaryService>();
+    builder.Services.AddScoped<INetSuiteApiService, NetSuiteApiService>();
+    builder.Services.AddScoped<ICustomFieldCrawlerService, CustomFieldCrawlerService>();
+
+    // Register background services
+    builder.Services.AddHostedService<CustomFieldCrawlerBackgroundService>();
+
+    // Add HttpClientFactory for NetSuite API calls
+    builder.Services.AddHttpClient();
 
     // Add health checks
     builder.Services.AddHealthChecks()
