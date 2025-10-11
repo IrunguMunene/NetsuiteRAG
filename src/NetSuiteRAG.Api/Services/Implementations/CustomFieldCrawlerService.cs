@@ -11,12 +11,15 @@ namespace NetSuiteRAG.Api.Services.Implementations;
 /// Service for crawling and tracking NetSuite custom fields.
 /// Discovers custom fields, tracks changes, and flags stale fields.
 /// </summary>
+#pragma warning disable IDE0060 // Remove unused parameter - cache will be used for invalidation in future enhancements
 public class CustomFieldCrawlerService(
     INetSuiteApiService netSuiteApiService,
     AppDbContext dbContext,
     IDistributedCache cache,
     ILogger<CustomFieldCrawlerService> logger) : ICustomFieldCrawlerService
+#pragma warning restore IDE0060
 {
+    private readonly IDistributedCache _cache = cache;
     private const int StaleThresholdDays = 90;
 
     /// <summary>

@@ -111,7 +111,7 @@ public class FieldEnrichmentController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetFieldEnrichment(
+    public Task<IActionResult> GetFieldEnrichment(
         string recordType,
         string fieldId,
         CancellationToken cancellationToken)
@@ -130,18 +130,18 @@ public class FieldEnrichmentController(
             var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
             metrics.RecordLatency("enrichment.get-field", elapsedMs);
 
-            return Ok(new
+            return Task.FromResult<IActionResult>(Ok(new
             {
                 recordType,
                 fieldId,
                 message = "Field enrichment data retrieval - to be implemented"
-            });
+            }));
         }
         catch (Exception ex)
         {
             metrics.IncrementCounter("enrichment.get-field.errors");
             logger.LogError(ex, "Error getting field enrichment");
-            return StatusCode(500, new { error = "Internal server error" });
+            return Task.FromResult<IActionResult>(StatusCode(500, new { error = "Internal server error" }));
         }
     }
 

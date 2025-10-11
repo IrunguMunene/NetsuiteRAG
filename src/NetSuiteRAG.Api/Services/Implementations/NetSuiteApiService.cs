@@ -11,11 +11,14 @@ namespace NetSuiteRAG.Api.Services.Implementations;
 /// Currently returns mock data for development.
 /// In production, this will use NetSuite REST API or RESTlet endpoints.
 /// </remarks>
+#pragma warning disable IDE0060 // Remove unused parameter - will be used when implementing real NetSuite API calls
 public class NetSuiteApiService(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,
     ILogger<NetSuiteApiService> logger) : INetSuiteApiService
+#pragma warning restore IDE0060
 {
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly string _baseUrl = configuration["NetSuite:BaseUrl"] ?? "https://mock.netsuite.com";
     private readonly string? _accountId = configuration["NetSuite:AccountId"];
     private readonly string? _consumerKey = configuration["NetSuite:ConsumerKey"];
