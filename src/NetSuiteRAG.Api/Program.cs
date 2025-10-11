@@ -44,6 +44,7 @@ try
     builder.Services.AddScoped<IOllamaEmbeddingService, OllamaEmbeddingService>();
     builder.Services.AddScoped<IFieldEnrichmentService, FieldEnrichmentService>();
     builder.Services.AddScoped<IGlossaryService, GlossaryService>();
+    builder.Services.AddSingleton<IVectorStoreService, QdrantVectorService>();
 
     // Register background services
     builder.Services.AddHostedService<CustomFieldCrawlerBackgroundService>();
