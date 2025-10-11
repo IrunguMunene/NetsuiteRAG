@@ -40,9 +40,12 @@ try
     builder.Services.AddScoped<IFieldDictionaryService, FieldDictionaryService>();
     builder.Services.AddScoped<INetSuiteApiService, NetSuiteApiService>();
     builder.Services.AddScoped<ICustomFieldCrawlerService, CustomFieldCrawlerService>();
+    builder.Services.AddScoped<IOllamaEmbeddingService, OllamaEmbeddingService>();
+    builder.Services.AddScoped<IFieldEnrichmentService, FieldEnrichmentService>();
 
     // Register background services
     builder.Services.AddHostedService<CustomFieldCrawlerBackgroundService>();
+    builder.Services.AddHostedService<FieldEnrichmentBackgroundService>();
 
     // Add HttpClientFactory for NetSuite API calls
     builder.Services.AddHttpClient();

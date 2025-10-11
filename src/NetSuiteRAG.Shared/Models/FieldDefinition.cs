@@ -106,4 +106,29 @@ public class FieldDefinition
     /// Used for audit and troubleshooting.
     /// </summary>
     public required string Source { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the business context for this field including usage scenarios and examples.
+    /// Stored as JSONB in the database for flexible metadata.
+    /// </summary>
+    public string? BusinessContext { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the ambiguity score (0.00 to 1.00) indicating similarity to other fields.
+    /// Higher scores indicate potential confusion with similarly named fields.
+    /// </summary>
+    public decimal? AmbiguityScore { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the embedding vector for semantic search (768 dimensions for nomic-embed-text).
+    /// Generated from field label, description, aliases, and business context.
+    /// Not stored in PostgreSQL - indexed in Qdrant vector database (T1.05).
+    /// </summary>
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public float[]? Embedding { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the timestamp when this field was enriched with aliases, context, and embeddings.
+    /// </summary>
+    public DateTime? EnrichedAt { get; init; }
 }
