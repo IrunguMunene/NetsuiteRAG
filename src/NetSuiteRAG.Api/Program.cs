@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NetSuiteRAG.Api.Data;
+using NetSuiteRAG.Api.Data.Seeds;
 using NetSuiteRAG.Api.Services.Implementations;
 using NetSuiteRAG.Api.Services.Interfaces;
 using NetSuiteRAG.Shared.Extensions;
@@ -42,6 +43,7 @@ try
     builder.Services.AddScoped<ICustomFieldCrawlerService, CustomFieldCrawlerService>();
     builder.Services.AddScoped<IOllamaEmbeddingService, OllamaEmbeddingService>();
     builder.Services.AddScoped<IFieldEnrichmentService, FieldEnrichmentService>();
+    builder.Services.AddScoped<IGlossaryService, GlossaryService>();
 
     // Register background services
     builder.Services.AddHostedService<CustomFieldCrawlerBackgroundService>();
@@ -97,6 +99,7 @@ try
             logger.LogInformation("Database migrations applied successfully");
 
             await FieldDefinitionSeeder.SeedAsync(dbContext, logger);
+            await GlossarySeeder.SeedAsync(dbContext, logger);
         }
         catch (Exception ex)
         {

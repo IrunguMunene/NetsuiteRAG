@@ -178,26 +178,10 @@ public interface IGlossaryService
         Guid id,
         CancellationToken cancellationToken = default);
 
-    // ========== Embedding Operations ==========
+    // ========== Statistics ==========
 
     /// <summary>
-    /// Generates embeddings for all glossary terms that don't have embeddings yet.
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Result with count of terms processed.</returns>
-    Task<Result<int>> GenerateTermEmbeddingsAsync(
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Generates embeddings for all query exemplars that don't have embeddings yet.
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Result with count of exemplars processed.</returns>
-    Task<Result<int>> GenerateExemplarEmbeddingsAsync(
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Gets statistics about the glossary (term count, exemplar count, embedding coverage).
+    /// Gets statistics about the glossary (term count, exemplar count by category/type).
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Glossary statistics.</returns>
@@ -212,10 +196,8 @@ public record GlossaryStatistics
 {
     public required int TotalTerms { get; init; }
     public required int ActiveTerms { get; init; }
-    public required int TermsWithEmbeddings { get; init; }
     public required int TotalExemplars { get; init; }
     public required int ActiveExemplars { get; init; }
-    public required int ExemplarsWithEmbeddings { get; init; }
     public required Dictionary<string, int> TermsByCategory { get; init; }
     public required Dictionary<string, int> ExemplarsByRecordType { get; init; }
     public required Dictionary<string, int> ExemplarsByDifficulty { get; init; }

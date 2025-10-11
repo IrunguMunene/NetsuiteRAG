@@ -384,10 +384,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnName("metadata_json")
                 .HasColumnType("jsonb");
 
-            entity.Property(e => e.EmbeddingJson)
-                .HasColumnName("embedding_json")
-                .HasColumnType("jsonb");
-
             entity.Property(e => e.CreatedAt)
                 .HasColumnName("created_at")
                 .IsRequired();
@@ -395,9 +391,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.UpdatedAt)
                 .HasColumnName("updated_at")
                 .IsRequired();
-
-            entity.Property(e => e.EmbeddedAt)
-                .HasColumnName("embedded_at");
 
             entity.Property(e => e.IsActive)
                 .HasColumnName("is_active")
@@ -413,9 +406,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("ix_glossary_terms_is_active");
-
-            entity.HasIndex(e => e.EmbeddedAt)
-                .HasDatabaseName("ix_glossary_terms_embedded_at");
         });
 
         // Configure QueryExemplar entity
@@ -468,10 +458,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnName("metadata_json")
                 .HasColumnType("jsonb");
 
-            entity.Property(e => e.EmbeddingJson)
-                .HasColumnName("embedding_json")
-                .HasColumnType("jsonb");
-
             entity.Property(e => e.CreatedAt)
                 .HasColumnName("created_at")
                 .IsRequired();
@@ -479,9 +465,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.UpdatedAt)
                 .HasColumnName("updated_at")
                 .IsRequired();
-
-            entity.Property(e => e.EmbeddedAt)
-                .HasColumnName("embedded_at");
 
             entity.Property(e => e.IsActive)
                 .HasColumnName("is_active")
@@ -505,9 +488,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(e => e.IsActive)
                 .HasDatabaseName("ix_query_exemplars_is_active");
-
-            entity.HasIndex(e => e.EmbeddedAt)
-                .HasDatabaseName("ix_query_exemplars_embedded_at");
 
             entity.HasIndex(e => e.RetrievalCount)
                 .HasDatabaseName("ix_query_exemplars_retrieval_count");

@@ -48,12 +48,6 @@ public class QueryExemplar
     public string? MetadataJson { get; set; }
 
     /// <summary>
-    /// Vector embedding for semantic search (768 dimensions for nomic-embed-text).
-    /// Stored as JSON array, will be indexed in Qdrant.
-    /// </summary>
-    public string? EmbeddingJson { get; set; }
-
-    /// <summary>
     /// When the exemplar was created.
     /// </summary>
     public required DateTime CreatedAt { get; init; }
@@ -62,11 +56,6 @@ public class QueryExemplar
     /// When the exemplar was last updated.
     /// </summary>
     public required DateTime UpdatedAt { get; set; }
-
-    /// <summary>
-    /// When the embedding was last generated.
-    /// </summary>
-    public DateTime? EmbeddedAt { get; set; }
 
     /// <summary>
     /// Whether this exemplar is active and should be included in RAG retrieval.
