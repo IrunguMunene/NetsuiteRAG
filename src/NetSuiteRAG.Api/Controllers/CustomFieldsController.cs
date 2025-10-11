@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NetSuiteRAG.Api.Services.Interfaces;
+using NetSuiteRAG.Shared.Monitoring;
 
 namespace NetSuiteRAG.Api.Controllers;
 
@@ -10,6 +11,7 @@ namespace NetSuiteRAG.Api.Controllers;
 [Route("api/custom-fields")]
 public class CustomFieldsController(
     ICustomFieldCrawlerService crawlerService,
+    MetricsCollector metrics,
     ILogger<CustomFieldsController> logger) : ControllerBase
 {
     /// <summary>
@@ -23,20 +25,28 @@ public class CustomFieldsController(
     public async Task<IActionResult> GetAllCustomFields(
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("custom-fields.get-all.requests");
+
         try
         {
             var result = await crawlerService.GetAllCustomFieldDescriptorsAsync(cancellationToken);
 
             if (!result.IsSuccess)
             {
+                metrics.IncrementCounter("custom-fields.get-all.errors");
                 logger.LogError("Failed to get custom fields: {Error}", result.Error);
                 return StatusCode(500, new { error = result.Error });
             }
+
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("custom-fields.get-all", elapsedMs);
 
             return Ok(result.Value);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("custom-fields.get-all.errors");
             logger.LogError(ex, "Error getting custom fields");
             return StatusCode(500, new { error = "Internal server error" });
         }
@@ -56,6 +66,9 @@ public class CustomFieldsController(
         string recordType,
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("custom-fields.get-by-type.requests");
+
         try
         {
             var result = await crawlerService.GetCustomFieldDescriptorsByRecordTypeAsync(
@@ -64,6 +77,7 @@ public class CustomFieldsController(
 
             if (!result.IsSuccess)
             {
+                metrics.IncrementCounter("custom-fields.get-by-type.errors");
                 logger.LogError("Failed to get custom fields for {RecordType}: {Error}", recordType, result.Error);
                 return StatusCode(500, new { error = result.Error });
             }
@@ -73,10 +87,14 @@ public class CustomFieldsController(
                 return NotFound(new { error = $"No custom fields found for record type '{recordType}'" });
             }
 
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("custom-fields.get-by-type", elapsedMs);
+
             return Ok(result.Value);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("custom-fields.get-by-type.errors");
             logger.LogError(ex, "Error getting custom fields for record type {RecordType}", recordType);
             return StatusCode(500, new { error = "Internal server error" });
         }
@@ -93,20 +111,28 @@ public class CustomFieldsController(
     public async Task<IActionResult> GetStaleFields(
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("custom-fields.stale.requests");
+
         try
         {
             var result = await crawlerService.GetStaleFieldsAsync(cancellationToken);
 
             if (!result.IsSuccess)
             {
+                metrics.IncrementCounter("custom-fields.stale.errors");
                 logger.LogError("Failed to get stale fields: {Error}", result.Error);
                 return StatusCode(500, new { error = result.Error });
             }
+
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("custom-fields.stale", elapsedMs);
 
             return Ok(result.Value);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("custom-fields.stale.errors");
             logger.LogError(ex, "Error getting stale fields");
             return StatusCode(500, new { error = "Internal server error" });
         }
@@ -125,20 +151,28 @@ public class CustomFieldsController(
         [FromQuery] int limit = 100,
         CancellationToken cancellationToken = default)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("custom-fields.changes.requests");
+
         try
         {
             var result = await crawlerService.GetChangeLogAsync(limit, cancellationToken);
 
             if (!result.IsSuccess)
             {
+                metrics.IncrementCounter("custom-fields.changes.errors");
                 logger.LogError("Failed to get change log: {Error}", result.Error);
                 return StatusCode(500, new { error = result.Error });
             }
+
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("custom-fields.changes", elapsedMs);
 
             return Ok(result.Value);
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("custom-fields.changes.errors");
             logger.LogError(ex, "Error getting change log");
             return StatusCode(500, new { error = "Internal server error" });
         }
@@ -155,6 +189,9 @@ public class CustomFieldsController(
     public async Task<IActionResult> TriggerCrawl(
         CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+        metrics.IncrementCounter("custom-fields.crawl.requests");
+
         try
         {
             logger.LogInformation("Manual custom field crawl triggered");
@@ -163,9 +200,13 @@ public class CustomFieldsController(
 
             if (!result.IsSuccess)
             {
+                metrics.IncrementCounter("custom-fields.crawl.errors");
                 logger.LogError("Manual crawl failed: {Error}", result.Error);
                 return StatusCode(500, new { error = result.Error });
             }
+
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("custom-fields.crawl", elapsedMs);
 
             logger.LogInformation(
                 "Manual crawl completed: {Total} total, {New} new, {Updated} updated, {Stale} stale",
@@ -182,6 +223,7 @@ public class CustomFieldsController(
         }
         catch (Exception ex)
         {
+            metrics.IncrementCounter("custom-fields.crawl.errors");
             logger.LogError(ex, "Error during manual crawl");
             return StatusCode(500, new { error = "Internal server error" });
         }
