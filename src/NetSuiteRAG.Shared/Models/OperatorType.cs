@@ -47,6 +47,12 @@ public enum OperatorType
     Within,
 
     /// <summary>
+    /// Date is not within specified range (exclusive).
+    /// Valid for: Date
+    /// </summary>
+    NotWithin,
+
+    /// <summary>
     /// Date is not on specified date.
     /// Valid for: Date
     /// </summary>
@@ -156,5 +162,19 @@ public enum OperatorType
     /// Field is not empty or null.
     /// Valid for: All types
     /// </summary>
-    IsNotEmpty
+    IsNotEmpty,
+
+    // Boolean/Checkbox operators
+
+    /// <summary>
+    /// Boolean field is true.
+    /// Valid for: Checkbox, Boolean
+    /// </summary>
+    IsTrue,
+
+    /// <summary>
+    /// Boolean field is false.
+    /// Valid for: Checkbox, Boolean
+    /// </summary>
+    IsFalse
 }

@@ -18,6 +18,8 @@ public static class OperatorMatrix
             FieldType.List => [
                 OperatorType.AnyOf,
                 OperatorType.NoneOf,
+                OperatorType.Equals,
+                OperatorType.NotEquals,
                 OperatorType.IsEmpty,
                 OperatorType.IsNotEmpty
             ],
@@ -33,10 +35,11 @@ public static class OperatorMatrix
                 OperatorType.On,
                 OperatorType.Before,
                 OperatorType.After,
-                OperatorType.Within,
-                OperatorType.NotOn,
                 OperatorType.OnOrBefore,
                 OperatorType.OnOrAfter,
+                OperatorType.Within,
+                OperatorType.NotWithin,
+                OperatorType.Between,
                 OperatorType.IsEmpty,
                 OperatorType.IsNotEmpty
             ],
@@ -67,6 +70,10 @@ public static class OperatorMatrix
             ],
 
             FieldType.Checkbox => [
+                OperatorType.IsTrue,
+                OperatorType.IsFalse,
+                OperatorType.Is,
+                OperatorType.IsNot,
                 OperatorType.Equals,
                 OperatorType.NotEquals,
                 OperatorType.IsEmpty,
@@ -107,8 +114,8 @@ public static class OperatorMatrix
     {
         return operatorType switch
         {
-            OperatorType.IsEmpty or OperatorType.IsNotEmpty => 0,
-            OperatorType.Between or OperatorType.Within => 2,
+            OperatorType.IsEmpty or OperatorType.IsNotEmpty or OperatorType.IsTrue or OperatorType.IsFalse => 0,
+            OperatorType.Between or OperatorType.Within or OperatorType.NotWithin => 2,
             OperatorType.AnyOf or OperatorType.NoneOf => -1, // Variable count
             _ => 1
         };
@@ -130,6 +137,7 @@ public static class OperatorMatrix
             OperatorType.Before => "is before",
             OperatorType.After => "is after",
             OperatorType.Within => "is within range",
+            OperatorType.NotWithin => "is not within range",
             OperatorType.NotOn => "is not on",
             OperatorType.OnOrBefore => "is on or before",
             OperatorType.OnOrAfter => "is on or after",
@@ -148,6 +156,8 @@ public static class OperatorMatrix
             OperatorType.IsNot => "is not",
             OperatorType.IsEmpty => "is empty",
             OperatorType.IsNotEmpty => "is not empty",
+            OperatorType.IsTrue => "is true",
+            OperatorType.IsFalse => "is false",
             _ => operatorType.ToString()
         };
     }
