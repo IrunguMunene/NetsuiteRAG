@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NetSuiteRAG.Api.Data;
 using NetSuiteRAG.Api.Services.Interfaces;
+using NetSuiteRAG.Api.Utilities;
 using NetSuiteRAG.Shared.Models;
 using NetSuiteRAG.Shared.Monitoring;
 
@@ -56,13 +57,31 @@ public class IndexingService(
                 "Indexing {Count} field descriptors to Qdrant",
                 fieldDescriptors.Count);
 
+            // Get existing point IDs from Qdrant to avoid duplicates
+            var existingIds = await QdrantHelpers.GetExistingPointIdsAsync(
+                vectorStore, FieldDescriptorsCollection, logger, cancellationToken);
+
+            // Filter out already-indexed field descriptors
+            var toIndex = QdrantHelpers.FilterUnindexedItems(
+                fieldDescriptors, existingIds, fd => fd.Id);
+
+            if (toIndex.Count == 0)
+            {
+                logger.LogInformation("All field descriptors are already indexed");
+                return Result<int>.Success(0);
+            }
+
+            logger.LogInformation(
+                "Indexing {Count} new field descriptors ({Total} total in DB, {Existing} already indexed)",
+                toIndex.Count, fieldDescriptors.Count, existingIds.Count);
+
             // Generate combined text for embeddings and index in batches
             var indexed = 0;
             const int batchSize = 50;
 
-            for (int i = 0; i < fieldDescriptors.Count; i += batchSize)
+            for (int i = 0; i < toIndex.Count; i += batchSize)
             {
-                var batch = fieldDescriptors.Skip(i).Take(batchSize).ToList();
+                var batch = toIndex.Skip(i).Take(batchSize).ToList();
 
                 // Generate combined text for each field descriptor
                 var texts = batch.Select(fd => GenerateFieldDescriptorText(fd)).ToList();
@@ -83,7 +102,7 @@ public class IndexingService(
                 var embeddings = embeddingResult.Value!;
 
                 // Prepare batch for upserting
-                var pointIds = batch.Select(fd => (ulong)fd.Id.GetHashCode()).ToList();
+                var pointIds = QdrantHelpers.ConvertGuidsToPointIds(batch.Select(fd => fd.Id));
                 var payloads = batch.Select(fd => new Dictionary<string, object>
                 {
                     ["id"] = fd.Id.ToString(),
@@ -116,7 +135,7 @@ public class IndexingService(
 
                 indexed += batch.Count;
                 logger.LogDebug("Indexed {Count}/{Total} field descriptors",
-                    indexed, fieldDescriptors.Count);
+                    indexed, toIndex.Count);
             }
 
             var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
@@ -172,13 +191,31 @@ public class IndexingService(
                 "Indexing {Count} glossary terms to Qdrant",
                 glossaryTerms.Count);
 
+            // Get existing point IDs from Qdrant to avoid duplicates
+            var existingIds = await QdrantHelpers.GetExistingPointIdsAsync(
+                vectorStore, GlossaryTermsCollection, logger, cancellationToken);
+
+            // Filter out already-indexed glossary terms
+            var toIndex = QdrantHelpers.FilterUnindexedItems(
+                glossaryTerms, existingIds, gt => gt.Id);
+
+            if (toIndex.Count == 0)
+            {
+                logger.LogInformation("All glossary terms are already indexed");
+                return Result<int>.Success(0);
+            }
+
+            logger.LogInformation(
+                "Indexing {Count} new glossary terms ({Total} total in DB, {Existing} already indexed)",
+                toIndex.Count, glossaryTerms.Count, existingIds.Count);
+
             // Generate combined text for embeddings and index in batches
             var indexed = 0;
             const int batchSize = 50;
 
-            for (int i = 0; i < glossaryTerms.Count; i += batchSize)
+            for (int i = 0; i < toIndex.Count; i += batchSize)
             {
-                var batch = glossaryTerms.Skip(i).Take(batchSize).ToList();
+                var batch = toIndex.Skip(i).Take(batchSize).ToList();
 
                 // Generate combined text for each glossary term
                 var texts = batch.Select(gt => GenerateGlossaryTermText(gt)).ToList();
@@ -199,7 +236,7 @@ public class IndexingService(
                 var embeddings = embeddingResult.Value!;
 
                 // Prepare batch for upserting
-                var pointIds = batch.Select(gt => (ulong)gt.Id.GetHashCode()).ToList();
+                var pointIds = QdrantHelpers.ConvertGuidsToPointIds(batch.Select(gt => gt.Id));
                 var payloads = batch.Select(gt => new Dictionary<string, object>
                 {
                     ["id"] = gt.Id.ToString(),
@@ -230,7 +267,7 @@ public class IndexingService(
 
                 indexed += batch.Count;
                 logger.LogDebug("Indexed {Count}/{Total} glossary terms",
-                    indexed, glossaryTerms.Count);
+                    indexed, toIndex.Count);
             }
 
             var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
@@ -286,13 +323,31 @@ public class IndexingService(
                 "Indexing {Count} query exemplars to Qdrant",
                 queryExemplars.Count);
 
+            // Get existing point IDs from Qdrant to avoid duplicates
+            var existingIds = await QdrantHelpers.GetExistingPointIdsAsync(
+                vectorStore, QueryExemplarsCollection, logger, cancellationToken);
+
+            // Filter out already-indexed query exemplars
+            var toIndex = QdrantHelpers.FilterUnindexedItems(
+                queryExemplars, existingIds, qe => qe.Id);
+
+            if (toIndex.Count == 0)
+            {
+                logger.LogInformation("All query exemplars are already indexed");
+                return Result<int>.Success(0);
+            }
+
+            logger.LogInformation(
+                "Indexing {Count} new query exemplars ({Total} total in DB, {Existing} already indexed)",
+                toIndex.Count, queryExemplars.Count, existingIds.Count);
+
             // Generate combined text for embeddings and index in batches
             var indexed = 0;
             const int batchSize = 50;
 
-            for (int i = 0; i < queryExemplars.Count; i += batchSize)
+            for (int i = 0; i < toIndex.Count; i += batchSize)
             {
-                var batch = queryExemplars.Skip(i).Take(batchSize).ToList();
+                var batch = toIndex.Skip(i).Take(batchSize).ToList();
 
                 // Generate combined text for each query exemplar
                 var texts = batch.Select(qe => GenerateQueryExemplarText(qe)).ToList();
@@ -313,7 +368,7 @@ public class IndexingService(
                 var embeddings = embeddingResult.Value!;
 
                 // Prepare batch for upserting
-                var pointIds = batch.Select(qe => (ulong)qe.Id.GetHashCode()).ToList();
+                var pointIds = QdrantHelpers.ConvertGuidsToPointIds(batch.Select(qe => qe.Id));
                 var payloads = batch.Select(qe => new Dictionary<string, object>
                 {
                     ["id"] = qe.Id.ToString(),
@@ -345,7 +400,7 @@ public class IndexingService(
 
                 indexed += batch.Count;
                 logger.LogDebug("Indexed {Count}/{Total} query exemplars",
-                    indexed, queryExemplars.Count);
+                    indexed, toIndex.Count);
             }
 
             var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
@@ -522,7 +577,7 @@ public class IndexingService(
             }
 
             // Upsert to Qdrant
-            var pointId = (ulong)fieldDescriptor.Id.GetHashCode();
+            var pointId = QdrantHelpers.ConvertGuidToPointId(fieldDescriptor.Id);
             var payload = new Dictionary<string, object>
             {
                 ["id"] = fieldDescriptor.Id.ToString(),
@@ -579,7 +634,7 @@ public class IndexingService(
             }
 
             // Upsert to Qdrant
-            var pointId = (ulong)glossaryTerm.Id.GetHashCode();
+            var pointId = QdrantHelpers.ConvertGuidToPointId(glossaryTerm.Id);
             var payload = new Dictionary<string, object>
             {
                 ["id"] = glossaryTerm.Id.ToString(),
@@ -634,7 +689,7 @@ public class IndexingService(
             }
 
             // Upsert to Qdrant
-            var pointId = (ulong)queryExemplar.Id.GetHashCode();
+            var pointId = QdrantHelpers.ConvertGuidToPointId(queryExemplar.Id);
             var payload = new Dictionary<string, object>
             {
                 ["id"] = queryExemplar.Id.ToString(),

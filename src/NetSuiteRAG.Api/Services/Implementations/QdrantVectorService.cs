@@ -466,4 +466,77 @@ public class QdrantVectorService(
             return Result<bool>.Failure($"Connection test failed: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Gets all point IDs from a collection for deduplication purposes.
+    /// Uses Qdrant's Scroll API to efficiently retrieve all point IDs without fetching vectors.
+    /// </summary>
+    public async Task<Result<HashSet<ulong>>> GetAllPointIdsAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default)
+    {
+        metrics.IncrementCounter("qdrant.get-all-point-ids.requests");
+        var startTime = DateTime.UtcNow;
+
+        try
+        {
+            var client = GetClient();
+            var pointIds = new HashSet<ulong>();
+
+            // Use Scroll API to iterate through all points
+            // Scroll is more efficient than search for retrieving all IDs
+            PointId? offset = null;
+            const uint scrollLimit = 1000; // Process 1000 points at a time
+
+            while (true)
+            {
+                var scrollResult = await client.ScrollAsync(
+                    collectionName: collectionName,
+                    filter: null, // No filter, get all points
+                    limit: scrollLimit,
+                    offset: offset,
+                    payloadSelector: false, // We only need IDs, not payloads
+                    vectorsSelector: false, // We don't need vectors
+                    cancellationToken: cancellationToken);
+
+                if (scrollResult == null || scrollResult.Result == null || scrollResult.Result.Count == 0)
+                {
+                    break;
+                }
+
+                // Add all point IDs to the hash set
+                foreach (var point in scrollResult.Result)
+                {
+                    if (point.Id?.Num != null)
+                    {
+                        pointIds.Add(point.Id.Num);
+                    }
+                }
+
+                // If we got fewer results than the limit, we've reached the end
+                if (scrollResult.Result.Count < scrollLimit)
+                {
+                    break;
+                }
+
+                // Set offset for next iteration (use the NextPageOffset if available)
+                offset = scrollResult.NextPageOffset;
+            }
+
+            var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            metrics.RecordLatency("qdrant.get-all-point-ids", elapsedMs);
+
+            logger.LogDebug(
+                "Retrieved {Count} point IDs from {CollectionName} in {ElapsedMs}ms",
+                pointIds.Count, collectionName, elapsedMs);
+
+            return Result<HashSet<ulong>>.Success(pointIds);
+        }
+        catch (Exception ex)
+        {
+            metrics.IncrementCounter("qdrant.get-all-point-ids.errors");
+            logger.LogError(ex, "Error getting all point IDs from {CollectionName}", collectionName);
+            return Result<HashSet<ulong>>.Failure($"Failed to get point IDs: {ex.Message}");
+        }
+    }
 }

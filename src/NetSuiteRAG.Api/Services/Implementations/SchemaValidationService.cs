@@ -9,6 +9,7 @@ namespace NetSuiteRAG.Api.Services.Implementations;
 /// - Layer 1: Structure, required fields, type correctness
 /// - Layer 2: NetSuite schema (fields exist, joins valid)
 /// - Layer 3: Operator compatibility with field types
+/// - Layer 4: Business guardrails (posting requirements, bounded periods, column/row limits)
 /// </summary>
 public class SchemaValidationService(
     IFieldDictionaryService fieldDictionaryService,
@@ -39,14 +40,38 @@ public class SchemaValidationService(
         var semanticErrors = ValidateSemanticAsync(plan).GetAwaiter().GetResult();
         errors.AddRange(semanticErrors);
 
+        // Layer 4: Business guardrails (run even if previous layers failed to collect all validation issues)
+        var guardrailResults = ValidateBusinessGuardrails(plan);
+        errors.AddRange(guardrailResults.Where(e => e.Severity is ValidationSeverity.Error or ValidationSeverity.Critical));
+        warnings.AddRange(guardrailResults.Where(e => e.Severity == ValidationSeverity.Warning)
+            .Select(e => new ValidationWarning
+            {
+                WarningCode = e.ErrorCode,
+                Message = e.Message,
+                FieldPath = e.FieldPath,
+                Suggestion = e.Suggestion
+            }));
+
         if (errors.Count > 0)
         {
-            logger.LogWarning("Schema validation failed with {ErrorCount} errors", errors.Count);
-            return ValidationResult.Failure(errors, "Schema validation failed");
+            logger.LogWarning("Business guardrails validation failed with {ErrorCount} errors", errors.Count);
+            return new ValidationResult
+            {
+                IsValid = false,
+                Errors = errors,
+                Warnings = warnings.Count > 0 ? warnings : null,
+                Message = "Business guardrails validation failed"
+            };
         }
 
-        logger.LogInformation("Schema validation succeeded");
-        return ValidationResult.Success("Schema validation passed");
+        logger.LogInformation("Schema validation succeeded (all 4 layers passed)");
+        return new ValidationResult
+        {
+            IsValid = true,
+            Errors = [],
+            Warnings = warnings.Count > 0 ? warnings : null,
+            Message = "Schema validation passed - all 4 layers passed"
+        };
     }
 
     /// <summary>
@@ -211,6 +236,251 @@ public class SchemaValidationService(
                     });
                 }
             }
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Validates business guardrails (Layer 4): posting requirements, bounded periods,
+    /// subsidiary scope, column/row limits.
+    /// </summary>
+    private List<ValidationError> ValidateBusinessGuardrails(SavedSearchPlan plan)
+    {
+        var errors = new List<ValidationError>();
+
+        // 1. Transaction posting validation
+        errors.AddRange(ValidateTransactionPosting(plan));
+
+        // 2. Bounded period validation (≤5 years)
+        errors.AddRange(ValidateBoundedPeriod(plan));
+
+        // 3. Subsidiary scope validation
+        errors.AddRange(ValidateSubsidiaryScope(plan));
+
+        // 4. Column cap (≤50)
+        errors.AddRange(ValidateColumnCap(plan));
+
+        // 5. Row cap (≤2M)
+        errors.AddRange(ValidateRowCap(plan));
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Validates that transaction record types have posting=true filter.
+    /// </summary>
+    private List<ValidationError> ValidateTransactionPosting(SavedSearchPlan plan)
+    {
+        var errors = new List<ValidationError>();
+
+        // Transaction record types that require posting=true
+        var transactionTypes = new[]
+        {
+            "transaction", "salesorder", "invoice", "cashsale", "creditmemo",
+            "bill", "check", "journalentry", "vendorpayment", "customerpayment",
+            "purchaseorder", "estimate", "itemfulfillment", "itemreceipt"
+        };
+
+        if (!transactionTypes.Contains(plan.RecordType.ToLowerInvariant()))
+        {
+            return errors; // Not a transaction type
+        }
+
+        // Check if posting filter exists
+        var hasPostingFilter = plan.Filters.Any(f =>
+            f.Field.Equals("posting", StringComparison.OrdinalIgnoreCase) &&
+            f.Operator == OperatorType.Is &&
+            f.Value != null &&
+            (f.Value.ToString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true ||
+             f.Value.ToString()?.Equals("T", StringComparison.OrdinalIgnoreCase) == true ||
+             (f.Value is bool boolValue && boolValue)));
+
+        if (!hasPostingFilter)
+        {
+            errors.Add(new ValidationError
+            {
+                ErrorCode = "MISSING_POSTING_FILTER",
+                Message = $"Transaction record type '{plan.RecordType}' requires a posting=true filter",
+                Severity = ValidationSeverity.Error,
+                FieldPath = "filters",
+                Suggestion = "Add a filter: { field: 'posting', operator: 'is', value: true } to ensure only posted transactions are included",
+                Details = new Dictionary<string, object>
+                {
+                    ["recordType"] = plan.RecordType,
+                    ["requiredFilter"] = "posting = true"
+                }
+            });
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Validates that date range filters are bounded (≤5 years).
+    /// </summary>
+    private List<ValidationError> ValidateBoundedPeriod(SavedSearchPlan plan)
+    {
+        var errors = new List<ValidationError>();
+
+        // Date fields that should be bounded
+        var dateFields = new[] { "trandate", "startdate", "enddate", "createddate", "lastmodifieddate", "duedate" };
+
+        for (int i = 0; i < plan.Filters.Count; i++)
+        {
+            var filter = plan.Filters[i];
+
+            // Check if this is a date field with a range operator
+            if (!dateFields.Contains(filter.Field.ToLowerInvariant()))
+            {
+                continue;
+            }
+
+            // Check for range operators (Between, Within)
+            if (filter.Operator == OperatorType.Between || filter.Operator == OperatorType.Within)
+            {
+                if (filter.Value is System.Collections.IEnumerable enumerable && filter.Value is not string)
+                {
+                    var list = System.Linq.Enumerable.ToList((dynamic)enumerable);
+                    if (list.Count == 2)
+                    {
+                        // Try to parse dates
+                        DateTime startDate = DateTime.MinValue;
+                        DateTime endDate = DateTime.MinValue;
+
+                        if (DateTime.TryParse(list[0]?.ToString(), out startDate) &&
+                            DateTime.TryParse(list[1]?.ToString(), out endDate))
+                        {
+                            var yearsDiff = (endDate - startDate).TotalDays / 365.25;
+                            if (yearsDiff > 5)
+                            {
+                                errors.Add(new ValidationError
+                                {
+                                    ErrorCode = "UNBOUNDED_DATE_RANGE",
+                                    Message = $"Date range for field '{filter.Field}' exceeds 5 years ({yearsDiff:F1} years)",
+                                    Severity = ValidationSeverity.Error,
+                                    FieldPath = $"filters[{i}].value",
+                                    InvalidValue = filter.Value,
+                                    Suggestion = "Reduce the date range to 5 years or less to ensure reasonable query performance",
+                                    Details = new Dictionary<string, object>
+                                    {
+                                        ["startDate"] = startDate.ToString("yyyy-MM-dd"),
+                                        ["endDate"] = endDate.ToString("yyyy-MM-dd"),
+                                        ["yearsDifference"] = yearsDiff,
+                                        ["maxYears"] = 5
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Validates that subsidiary filter is present for multi-subsidiary environments.
+    /// </summary>
+    private List<ValidationError> ValidateSubsidiaryScope(SavedSearchPlan plan)
+    {
+        var errors = new List<ValidationError>();
+
+        // Record types that should have subsidiary filtering
+        var subsidiaryRelevantTypes = new[]
+        {
+            "transaction", "salesorder", "invoice", "cashsale", "creditmemo",
+            "bill", "check", "journalentry", "customer", "vendor", "item"
+        };
+
+        if (!subsidiaryRelevantTypes.Contains(plan.RecordType.ToLowerInvariant()))
+        {
+            return errors; // Not relevant for this record type
+        }
+
+        // Check if subsidiary filter exists
+        var hasSubsidiaryFilter = plan.Filters.Any(f =>
+            f.Field.Equals("subsidiary", StringComparison.OrdinalIgnoreCase));
+
+        if (!hasSubsidiaryFilter)
+        {
+            // This is a warning for now (could be error in production)
+            errors.Add(new ValidationError
+            {
+                ErrorCode = "MISSING_SUBSIDIARY_FILTER",
+                Message = $"Record type '{plan.RecordType}' should include a subsidiary filter for multi-subsidiary environments",
+                Severity = ValidationSeverity.Warning,
+                FieldPath = "filters",
+                Suggestion = "Add a subsidiary filter to scope results to specific subsidiaries: { field: 'subsidiary', operator: 'anyof', value: [1, 2, 3] }",
+                Details = new Dictionary<string, object>
+                {
+                    ["recordType"] = plan.RecordType,
+                    ["recommendedFilter"] = "subsidiary"
+                }
+            });
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Validates that column count does not exceed 50.
+    /// </summary>
+    private List<ValidationError> ValidateColumnCap(SavedSearchPlan plan)
+    {
+        var errors = new List<ValidationError>();
+
+        const int maxColumns = 50;
+
+        if (plan.Columns.Count > maxColumns)
+        {
+            errors.Add(new ValidationError
+            {
+                ErrorCode = "COLUMN_CAP_EXCEEDED",
+                Message = $"Column count ({plan.Columns.Count}) exceeds maximum allowed ({maxColumns})",
+                Severity = ValidationSeverity.Error,
+                FieldPath = "columns",
+                InvalidValue = plan.Columns.Count,
+                Suggestion = $"Reduce the number of columns to {maxColumns} or fewer for optimal performance",
+                Details = new Dictionary<string, object>
+                {
+                    ["currentCount"] = plan.Columns.Count,
+                    ["maxAllowed"] = maxColumns,
+                    ["excess"] = plan.Columns.Count - maxColumns
+                }
+            });
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Validates that row limit does not exceed 2 million.
+    /// </summary>
+    private List<ValidationError> ValidateRowCap(SavedSearchPlan plan)
+    {
+        var errors = new List<ValidationError>();
+
+        const int maxRows = 2_000_000;
+
+        if (plan.MaxResults.HasValue && plan.MaxResults.Value > maxRows)
+        {
+            errors.Add(new ValidationError
+            {
+                ErrorCode = "ROW_CAP_EXCEEDED",
+                Message = $"MaxResults ({plan.MaxResults.Value:N0}) exceeds maximum allowed ({maxRows:N0})",
+                Severity = ValidationSeverity.Error,
+                FieldPath = "maxResults",
+                InvalidValue = plan.MaxResults.Value,
+                Suggestion = $"Reduce maxResults to {maxRows:N0} or fewer, or use pagination/filtering to limit result set",
+                Details = new Dictionary<string, object>
+                {
+                    ["currentLimit"] = plan.MaxResults.Value,
+                    ["maxAllowed"] = maxRows,
+                    ["excess"] = plan.MaxResults.Value - maxRows
+                }
+            });
         }
 
         return errors;
