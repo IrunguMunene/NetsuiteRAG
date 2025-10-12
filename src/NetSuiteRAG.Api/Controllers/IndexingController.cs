@@ -259,7 +259,7 @@ public class IndexingController(
             metrics.IncrementCounter("api.indexing.reindex-field-descriptor.errors");
             logger.LogError("Failed to re-index field descriptor {Id}: {Error}", id, result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error != null && result.Error.Contains("not found"))
             {
                 return NotFound(new { error = result.Error });
             }
@@ -304,7 +304,7 @@ public class IndexingController(
             metrics.IncrementCounter("api.indexing.reindex-glossary-term.errors");
             logger.LogError("Failed to re-index glossary term {Id}: {Error}", id, result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error != null && result.Error.Contains("not found"))
             {
                 return NotFound(new { error = result.Error });
             }
@@ -349,7 +349,7 @@ public class IndexingController(
             metrics.IncrementCounter("api.indexing.reindex-query-exemplar.errors");
             logger.LogError("Failed to re-index query exemplar {Id}: {Error}", id, result.Error);
 
-            if (result.Error.Contains("not found"))
+            if (result.Error != null && result.Error.Contains("not found"))
             {
                 return NotFound(new { error = result.Error });
             }
