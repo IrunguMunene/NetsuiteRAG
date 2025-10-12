@@ -49,7 +49,7 @@ $(git status --short | Out-String)
 $sessionContent += $progressNote
 $sessionContent | Out-File $SessionFile -Encoding UTF8
 
-Write-Host "✓ Updated $SessionFile" -ForegroundColor Green
+Write-Host "[SUCCESS] Updated $SessionFile" -ForegroundColor Green
 Write-Host ""
 
 # Step 2: Update PROJECT_MASTER if task provided
@@ -73,9 +73,9 @@ $commitMessage = if ($TaskId) { "$TaskId : $Summary" } else { "Session progress:
 git commit -m $commitMessage
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "✓ Committed successfully" -ForegroundColor Green
+    Write-Host "[SUCCESS] Committed successfully" -ForegroundColor Green
 } else {
-    Write-Host "✗ Commit failed (maybe no changes?)" -ForegroundColor Yellow
+    Write-Host "[INFO] Commit failed (maybe no changes?)" -ForegroundColor Yellow
 }
 Write-Host ""
 
