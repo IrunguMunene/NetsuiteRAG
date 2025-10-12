@@ -29,7 +29,7 @@ $content = Get-Content $masterFile -Raw
 # Update task checkbox if Complete
 if ($Status -eq 'Complete') {
     $content = $content -replace "(\[ \] $TaskId)", "[x] $TaskId"
-    Write-Host "✓ Marked $TaskId as complete" -ForegroundColor Green
+    Write-Host "[COMPLETE] Marked $TaskId as complete" -ForegroundColor Green
 }
 
 # Add to session history
@@ -51,5 +51,5 @@ $content = $content -replace '\*\*Last Updated:\*\* .*', "**Last Updated:** $tim
 # Save
 $content | Out-File $masterFile -Encoding UTF8 -NoNewline
 
-Write-Host "✓ Updated PROJECT_MASTER.md" -ForegroundColor Green
+Write-Host "[SUCCESS] Updated PROJECT_MASTER.md" -ForegroundColor Green
 Write-Host ""
