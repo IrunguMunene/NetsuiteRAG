@@ -1,6 +1,6 @@
-﻿# NetSuite RAG Project - Master Control Document
+# NetSuite RAG Project - Master Control Document
 
-**Last Updated:** 2025-10-11
+**Last Updated:** 2025-10-12 15:16
 **Project Path:** D:\Development\NetsuiteRAG
 
 ---
@@ -108,7 +108,7 @@ Located in: `docs/`
 - [x] T1.02: Custom Field Crawler (daily)
 - [x] T1.03: Descriptor Enrichment
 - [x] T1.04: Business glossary + exemplars (30-50)
-- [ ] T1.05: Index artifacts to vector DB <- **CURRENT**
+- [x] T1.05: Index artifacts to vector DB <- **CURRENT**
 
 ### Phase 2: Planning & Validation
 - [ ] T2.01: SavedSearchPlan schema (strict)
@@ -164,6 +164,8 @@ Located in: `docs/`
 
 ## Session History
 
+
+2025-10-12 15:16 : T1.05 - Complete
 ### Completed Sessions
 - 2025-10-10 09:00 - T0.01: Project scaffolding - Complete
 - 2025-10-10 14:00 - T0.02: Observability baseline - Complete
