@@ -44,6 +44,8 @@ try
     builder.Services.AddScoped<IOllamaEmbeddingService, OllamaEmbeddingService>();
     builder.Services.AddScoped<IFieldEnrichmentService, FieldEnrichmentService>();
     builder.Services.AddScoped<IGlossaryService, GlossaryService>();
+    builder.Services.AddSingleton<IVectorStoreService, QdrantVectorService>();
+    builder.Services.AddScoped<IIndexingService, IndexingService>();
 
     // Register background services
     builder.Services.AddHostedService<CustomFieldCrawlerBackgroundService>();
@@ -100,6 +102,22 @@ try
 
             await FieldDefinitionSeeder.SeedAsync(dbContext, logger);
             await GlossarySeeder.SeedAsync(dbContext, logger);
+
+            // Initialize Qdrant vector store collections
+            logger.LogInformation("Initializing Qdrant vector store collections...");
+            var vectorStore = scope.ServiceProvider.GetRequiredService<IVectorStoreService>();
+            var initResult = await vectorStore.InitializeCollectionsAsync();
+
+            if (initResult.IsSuccess)
+            {
+                logger.LogInformation("Qdrant collections initialized successfully");
+            }
+            else
+            {
+                logger.LogWarning(
+                    "Failed to initialize Qdrant collections: {Error}. Vector search will not be available until Qdrant is running.",
+                    initResult.Error);
+            }
         }
         catch (Exception ex)
         {
