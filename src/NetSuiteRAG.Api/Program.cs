@@ -46,6 +46,7 @@ try
     builder.Services.AddScoped<IGlossaryService, GlossaryService>();
     builder.Services.AddSingleton<IVectorStoreService, QdrantVectorService>();
     builder.Services.AddScoped<IIndexingService, IndexingService>();
+    builder.Services.AddScoped<ISchemaValidationService, SchemaValidationService>();
 
     // Register background services
     builder.Services.AddHostedService<CustomFieldCrawlerBackgroundService>();
