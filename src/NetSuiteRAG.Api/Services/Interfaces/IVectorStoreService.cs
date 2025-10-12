@@ -116,6 +116,17 @@ public interface IVectorStoreService
     /// <returns>Result indicating connection status.</returns>
     Task<Result<bool>> TestConnectionAsync(
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all point IDs from a collection for deduplication purposes.
+    /// Uses Qdrant's Scroll API to efficiently retrieve all point IDs without fetching vectors.
+    /// </summary>
+    /// <param name="collectionName">Name of the collection.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Result containing a hash set of all point IDs in the collection.</returns>
+    Task<Result<HashSet<ulong>>> GetAllPointIdsAsync(
+        string collectionName,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
